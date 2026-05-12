@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>営業体制診断ツール</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--navy:#1F4E79;--blue:#2E75B6;--blue-light:#EBF3FB;--accent:#E36C09;--bg:#F4F6F9;--text:#1a1a2e;--muted:#6b7280;--border:rgba(0,0,0,0.10);--r:12px;--rs:8px;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
+header{background:var(--navy);padding:14px 24px;}
+.logo{color:#fff;font-size:15px;font-weight:700;}
+.logo span{opacity:0.6;font-weight:400;font-size:12px;margin-left:8px;}
+main{flex:1;display:flex;justify-content:center;padding:40px 16px 60px;}
+.card{background:#fff;border-radius:var(--r);box-shadow:0 2px 20px rgba(0,0,0,0.07);width:100%;max-width:580px;padding:40px;}
+@media(max-width:600px){.card{padding:24px 18px;}main{padding:20px 12px 40px;}}
+.step{display:none;}.step.active{display:block;}
+.intro-icon{width:56px;height:56px;background:var(--blue-light);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;}
+.intro h1{text-align:center;font-size:20px;font-weight:700;color:var(--navy);margin-bottom:8px;}
+.intro p{text-align:center;font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:24px;}
+.badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
+.badge{background:var(--blue-light);color:var(--navy);font-size:12px;font-weight:500;padding:4px 12px;border-radius:20px;}
+.input-group{margin-bottom:14px;}
+.input-group label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:5px;}
+.input-group input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--rs);font-size:14px;font-family:inherit;color:var(--text);background:#fff;}
+.input-group input:focus{outline:none;border-color:var(--blue);}
+.btn-p{display:block;width:100%;padding:13px;background:var(--navy);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:background 0.2s;}
+.btn-p:hover{background:var(--blue);}
+.btn-p:disabled{background:#d1d5db;cursor:not-allowed;}
+.btn-o{padding:9px 18px;background:none;border:1.5px solid var(--border);border-radius:var(--rs);font-size:13px;font-family:inherit;color:var(--muted);cursor:pointer;}
+.btn-o:hover{border-color:var(--navy);color:var(--navy);}
+.prog-wrap{margin-bottom:28px;}
+.prog-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px;}
+.prog-meta strong{color:var(--navy);}
+.prog-track{height:4px;background:#e5e7eb;border-radius:2px;overflow:hidden;}
+.prog-bar{height:4px;background:linear-gradient(90deg,var(--navy),var(--blue));border-radius:2px;transition:width 0.4s;}
+.cat-chip{display:inline-block;background:var(--blue-light);color:var(--navy);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:12px;letter-spacing:0.04em;}
+.q-text{font-size:16px;font-weight:700;line-height:1.65;margin-bottom:20px;}
+.opts{display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
+.opt{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;background:#fff;text-align:left;font-family:inherit;color:var(--text);font-size:14px;line-height:1.5;transition:all 0.15s;}
+.opt:hover{border-color:var(--blue);background:var(--blue-light);}
+.opt.selected{border-color:var(--navy);background:var(--navy);color:#fff;font-weight:500;}
+.opt-dot{width:20px;height:20px;border-radius:50%;border:1.5px solid currentColor;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0.5;}
+.opt.selected .opt-dot{opacity:1;background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.6);}
+.opt.selected .opt-dot::after{content:'';width:8px;height:8px;border-radius:50%;background:#fff;}
+.nav-row{display:flex;justify-content:space-between;align-items:center;}
+.res-hero{text-align:center;padding-bottom:24px;border-bottom:1px solid var(--border);margin-bottom:24px;}
+.res-company{font-size:13px;color:var(--muted);margin-bottom:6px;}
+.res-score-wrap{display:flex;align-items:baseline;justify-content:center;gap:4px;margin-bottom:10px;}
+.res-score{font-size:64px;font-weight:700;color:var(--navy);line-height:1;}
+.res-denom{font-size:18px;color:var(--muted);}
+.rank-pill{display:inline-block;padding:5px 18px;border-radius:20px;font-size:13px;font-weight:700;}
+.rank-S{background:var(--navy);color:#fff;}
+.rank-A{background:#E6F1FB;color:#185FA5;}
+.rank-B{background:#EAF3DE;color:#3B6D11;}
+.rank-C{background:#FAEEDA;color:#854F0B;}
+.rank-D{background:#FCEBEB;color:#A32D2D;}
+.sec-title{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:12px;}
+.radar-wrap{margin:0 auto 24px;max-width:280px;}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;}
+.cat-item{background:#F8FAFC;border-radius:var(--rs);padding:12px 14px;border:1px solid var(--border);}
+.cat-item-name{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.cat-item-score{font-size:20px;font-weight:700;color:var(--navy);}
+.cat-item-score span{font-size:12px;color:var(--muted);font-weight:400;}
+.mini-bar{height:3px;background:#e5e7eb;border-radius:2px;margin-top:8px;}
+.mini-bar-fill{height:3px;border-radius:2px;background:var(--blue);}
+.comment-section{background:#FFF8F5;border:1px solid #FDDCCA;border-radius:var(--rs);padding:16px 18px;margin-bottom:24px;}
+.comment-section .sec-title{color:var(--accent);margin-bottom:10px;}
+.comment-item{display:flex;gap:10px;margin-bottom:10px;font-size:13px;line-height:1.7;color:#4b3a2e;}
+.comment-item:last-child{margin-bottom:0;}
+.comment-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:7px;}
+.comment-item strong{color:var(--navy);}
+.res-actions{display:flex;gap:10px;}
+.btn-print{flex:1;padding:13px;background:var(--navy);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.2s;}
+.btn-print:hover{background:var(--blue);}
+.btn-retry{padding:13px 20px;background:none;border:1.5px solid var(--border);border-radius:var(--rs);font-size:13px;font-family:inherit;color:var(--muted);cursor:pointer;}
+.btn-retry:hover{border-color:var(--navy);color:var(--navy);}
+footer{text-align:center;padding:16px;font-size:12px;color:#9ca3af;}
+#print-area{display:none;}
+
+/* ===== 印刷スタイル ===== */
+@media print {
+  @page{margin:12mm;size:A4;}
+  body>*{display:none!important;}
+  #print-area{display:block!important;font-family:'Noto Sans JP',sans-serif;color:#1a1a2e;width:100%;}
+  .ph{background:#1F4E79!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#fff;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-radius:6px;}
+  .ph-title{font-size:14px;font-weight:700;}
+  .ph-sub{font-size:9px;opacity:0.75;margin-top:2px;}
+  .ph-date{font-size:10px;opacity:0.85;}
+  .pc{font-size:17px;font-weight:700;color:#1F4E79;margin-bottom:2px;}
+  .pp{font-size:11px;color:#6b7280;margin-bottom:14px;}
+  .psb{background:#EBF3FB!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;border-radius:8px;padding:14px;text-align:center;margin-bottom:16px;}
+  .psn{font-size:48px;font-weight:700;color:#1F4E79;line-height:1;display:inline;}
+  .psd{font-size:14px;color:#6b7280;display:inline;margin-left:4px;}
+  .prk{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-top:8px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .pst{font-size:9px;font-weight:700;color:#6b7280;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;margin-top:14px;border-bottom:1px solid #e5e7eb;padding-bottom:3px;}
+  .ptc{display:flex;gap:14px;margin-bottom:14px;align-items:flex-start;}
+  .prw{width:220px;flex-shrink:0;}
+  .prw img{width:220px;height:220px;}
+  .pcg{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .pci{background:#F8FAFC!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;border:1px solid #e5e7eb;border-radius:5px;padding:7px 9px;}
+  .pcn{font-size:9px;color:#6b7280;margin-bottom:2px;}
+  .pcs{font-size:16px;font-weight:700;color:#1F4E79;}
+  .pcs span{font-size:9px;color:#9ca3af;font-weight:400;}
+  .pb{height:3px;background:#e5e7eb;border-radius:2px;margin-top:5px;}
+  .pbf{height:3px;border-radius:2px;background:#2E75B6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .pcmb{background:#FFF8F5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;border:1px solid #FDDCCA;border-radius:6px;padding:12px 14px;margin-top:14px;}
+  .pcmt{font-size:9px;font-weight:700;color:#E36C09;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;}
+  .pcmi{display:flex;gap:7px;margin-bottom:7px;font-size:10px;line-height:1.6;color:#4b3a2e;}
+  .pcmi:last-child{margin-bottom:0;}
+  .pdt{width:5px;height:5px;border-radius:50%;background:#E36C09!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;flex-shrink:0;margin-top:4px;}
+  .pcmi strong{color:#1F4E79;}
+  .pft{margin-top:20px;padding-top:8px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:8px;color:#9ca3af;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">営業体制診断ツール<span>Sales Diagnostic</span></div>
+</header>
+
+<main>
+<div class="card">
+
+  <div class="step active" id="step-intro">
+    <div class="intro">
+      <div class="intro-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1F4E79" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      </div>
+      <h1>営業体制 診断ツール</h1>
+      <p>5つのカテゴリ・20問に答えるだけで<br>貴社の営業体制の強みと課題が一目でわかります</p>
+      <div class="badges">
+        <span class="badge">📋 全20問</span>
+        <span class="badge">⏱ 約3分</span>
+        <span class="badge">📊 スコア自動算出</span>
+        <span class="badge">📄 PDF保存対応</span>
+      </div>
+      <div class="input-group">
+        <label>会社名・診断対象名</label>
+        <input type="text" id="company-name" placeholder="例：株式会社〇〇" />
+      </div>
+      <div class="input-group">
+        <label>担当者名（任意）</label>
+        <input type="text" id="person-name" placeholder="例：田中 太郎" />
+      </div>
+      <button class="btn-p" onclick="startDiag()">診断をはじめる →</button>
+    </div>
+  </div>
+
+  <div class="step" id="step-q">
+    <div class="prog-wrap">
+      <div class="prog-meta">
+        <span>質問 <strong id="q-num">1</strong> / 20</span>
+        <span id="q-cat-meta"></span>
+      </div>
+      <div class="prog-track"><div class="prog-bar" id="prog-bar" style="width:5%"></div></div>
+    </div>
+    <div class="cat-chip" id="q-cat"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="opts" id="q-opts"></div>
+    <div class="nav-row">
+      <button class="btn-o" id="btn-back" onclick="prevQ()">← 戻る</button>
+      <button class="btn-p" id="btn-next" onclick="nextQ()" disabled style="width:auto;padding:10px 28px;">次へ →</button>
+    </div>
+  </div>
+
+  <div class="step" id="step-result">
+    <div class="res-hero">
+      <div class="res-company" id="res-company"></div>
+      <div class="res-score-wrap">
+        <div class="res-score" id="res-score">0</div>
+        <div class="res-denom">/ 80点</div>
+      </div>
+      <span class="rank-pill" id="res-rank"></span>
+    </div>
+    <div class="sec-title">カテゴリ別スコア</div>
+    <div class="radar-wrap"><canvas id="radar-chart" width="280" height="280"></canvas></div>
+    <div class="cat-grid" id="cat-grid"></div>
+    <div class="comment-section">
+      <div class="sec-title">改善の優先ポイント</div>
+      <div id="comments"></div>
+    </div>
+    <div class="res-actions">
+      <button class="btn-print" onclick="printResult()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        印刷してPDFで保存
+      </button>
+      <button class="btn-retry" onclick="resetDiag()">再診断</button>
+    </div>
+    <p style="font-size:11px;color:#9ca3af;margin-top:10px;text-align:center;">印刷ダイアログで「PDFとして保存」を選んでください（Chrome推奨）</p>
+  </div>
+
+</div>
+</main>
+
+<footer>© 2025 営業体制診断ツール</footer>
+
+<!-- 印刷専用エリア -->
+<div id="print-area">
+  <div class="ph">
+    <div><div class="ph-title">営業体制診断レポート　／　Sales Diagnostic Report</div><div class="ph-sub">Sales Diagnostic Tool</div></div>
+    <div class="ph-date" id="p-date"></div>
+  </div>
+  <div class="pc" id="p-company"></div>
+  <div class="pp" id="p-person"></div>
+  <div class="psb">
+    <div><span class="psn" id="p-score"></span><span class="psd">/ 80点</span></div>
+    <div><span class="prk" id="p-rank"></span></div>
+  </div>
+  <div class="pst">カテゴリ別スコア</div>
+  <div class="ptc">
+    <div class="prw"><img id="p-radar-img" src="" alt="レーダーチャート" /></div>
+    <div class="pcg" id="p-cat-grid"></div>
+  </div>
+  <div class="pcmb">
+    <div class="pcmt">改善の優先ポイント</div>
+    <div id="p-comments"></div>
+  </div>
+  <div class="pft">
+    <span>営業体制診断ツール　Sales Diagnostic Tool</span>
+    <span id="p-footer-date"></span>
+  </div>
+</div>
+
+<script>
+const QUESTIONS=[
+  {cat:"リード対応",q:"問い合わせから初回連絡まで、平均どのくらいかかっていますか？",opts:["1時間以内に対応できている","当日中には対応している","翌日以降になることが多い","対応ルール自体が決まっていない"],pts:[4,3,2,1]},
+  {cat:"リード対応",q:"問い合わせへの初回対応は誰が担当していますか？",opts:["専任担当者が決まっている","当番制でルールがある","状況次第でバラバラ","なんとなくで決まっていない"],pts:[4,3,2,1]},
+  {cat:"リード対応",q:"初回対応のトークスクリプト・マニュアルはありますか？",opts:["整備されており全員が使っている","ある程度あるが徹底されていない","個人任せになっている","ない"],pts:[4,3,2,1]},
+  {cat:"リード対応",q:"問い合わせ経路（Web・電話・来場など）ごとに対応フローは分かれていますか？",opts:["経路別に明確に分かれている","一部は分かれている","ほぼ統一されていない","考えたことがない"],pts:[4,3,2,1]},
+  {cat:"追客・フォロー",q:"未成約のお客様へのフォローは何回・どのタイミングで行っていますか？",opts:["回数・タイミングが明確に決まっている","ある程度のルールがある","担当者の裁量に任せている","ほぼフォローしていない"],pts:[4,3,2,1]},
+  {cat:"追客・フォロー",q:"フォロー時のトーク・メールテンプレートはありますか？",opts:["整備されており活用している","一部ある","個人任せ","ない"],pts:[4,3,2,1]},
+  {cat:"追客・フォロー",q:"リードの温度感（優先度）の管理はできていますか？",opts:["優先度分けして管理している","なんとなく把握している","ほぼ把握できていない","管理自体していない"],pts:[4,3,2,1]},
+  {cat:"追客・フォロー",q:"検討中のお客様への情報提供（資料・メルマガ等）は行っていますか？",opts:["定期的に行っている","不定期に行うことがある","ほとんど行っていない","全く行っていない"],pts:[4,3,2,1]},
+  {cat:"商談・クロージング",q:"商談時のトークスクリプト・提案フローはありますか？",opts:["整備されており標準化されている","ある程度の型がある","個人任せになっている","ない"],pts:[4,3,2,1]},
+  {cat:"商談・クロージング",q:"失注後に「なぜ断られたか」のヒアリング・分析はしていますか？",opts:["必ず行い分析に活かしている","時々行っている","ほとんどしていない","全くしていない"],pts:[4,3,2,1]},
+  {cat:"商談・クロージング",q:"見積もり・価格提示のルール（値引き権限等）は明確ですか？",opts:["明確に決まっている","おおまかなルールがある","担当者判断になっている","ルールがない"],pts:[4,3,2,1]},
+  {cat:"商談・クロージング",q:"問い合わせから成約までの転換率（CVR）を把握していますか？",opts:["数値で正確に把握している","おおよそ把握している","なんとなくしか分からない","全く把握していない"],pts:[4,3,2,1]},
+  {cat:"育成・ロープレ",q:"ロールプレイング（ロープレ）は実施していますか？",opts:["月1回以上定期的に実施","不定期に実施","ほぼしていない","全くしていない"],pts:[4,3,2,1]},
+  {cat:"育成・ロープレ",q:"新人スタッフへのOJT・同行研修の仕組みはありますか？",opts:["体系化されている","なんとなくやっている","個人任せ","ない"],pts:[4,3,2,1]},
+  {cat:"育成・ロープレ",q:"スタッフへの定期的な個別フィードバックは行っていますか？",opts:["定期的に行っている","時々行っている","ほぼ行っていない","全くしていない"],pts:[4,3,2,1]},
+  {cat:"育成・ロープレ",q:"営業スタッフの商品知識・提案力にばらつきはありますか？",opts:["ほぼ均一でばらつきが少ない","多少のばらつきがある","かなりばらつきがある","非常に大きなばらつきがある"],pts:[4,3,2,1]},
+  {cat:"管理・ツール",q:"営業活動（架電数・商談数・成約数）を個人別に管理していますか？",opts:["個人別に数値管理している","チーム全体のみ管理","なんとなく把握している","管理していない"],pts:[4,3,2,1]},
+  {cat:"管理・ツール",q:"SFA・CRMなどの営業管理ツールを活用していますか？",opts:["フル活用している","部分的に使っている","Excelや紙のみ","管理ツール自体ない"],pts:[4,3,2,1]},
+  {cat:"管理・ツール",q:"KPI（目標と実績）の進捗確認はどのくらいの頻度で行っていますか？",opts:["週次で確認している","月次で確認している","不定期","ほぼ確認していない"],pts:[4,3,2,1]},
+  {cat:"管理・ツール",q:"目標未達の場合、具体的な改善アクションを取る仕組みがありますか？",opts:["仕組みとして定着している","時々対応している","その場しのぎになっている","何も対応していない"],pts:[4,3,2,1]},
+];
+const CATS=["リード対応","追客・フォロー","商談・クロージング","育成・ロープレ","管理・ツール"];
+const ADVICE={
+  "リード対応":"初回接触の速度とルール化が急務です。リードの取りこぼしが最大の損失につながっています。",
+  "追客・フォロー":"未成約リードへの組織的なフォロー体制がなく、せっかくのリードが眠っています。",
+  "商談・クロージング":"商談の型がなく、担当者スキルに依存した状態です。標準化で全体底上げが可能です。",
+  "育成・ロープレ":"ロープレや育成の仕組みがなく、スキルのばらつきが成約率に直結しています。",
+  "管理・ツール":"数値管理・PDCAの仕組みがなく、改善活動が属人的になっています。",
+};
+const RANK_STYLES={
+  'rank-S':'background:#1F4E79;color:#fff;',
+  'rank-A':'background:#E6F1FB;color:#185FA5;',
+  'rank-B':'background:#EAF3DE;color:#3B6D11;',
+  'rank-C':'background:#FAEEDA;color:#854F0B;',
+  'rank-D':'background:#FCEBEB;color:#A32D2D;',
+};
+
+let cur=0,ans=new Array(20).fill(null),radarChart=null;
+
+function startDiag(){cur=0;ans=new Array(20).fill(null);show('step-q');renderQ();}
+function show(id){document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+function renderQ(){
+  const q=QUESTIONS[cur];
+  document.getElementById('q-num').textContent=cur+1;
+  document.getElementById('q-cat-meta').textContent=q.cat;
+  document.getElementById('prog-bar').style.width=`${((cur+1)/20)*100}%`;
+  document.getElementById('q-cat').textContent=q.cat;
+  document.getElementById('q-text').textContent=q.q;
+  const wrap=document.getElementById('q-opts');
+  wrap.innerHTML='';
+  q.opts.forEach((o,i)=>{
+    const b=document.createElement('button');
+    b.className='opt'+(ans[cur]===i?' selected':'');
+    b.innerHTML=`<span class="opt-dot"></span><span>${o}</span>`;
+    b.onclick=()=>pick(i);
+    wrap.appendChild(b);
+  });
+  document.getElementById('btn-next').disabled=ans[cur]===null;
+  document.getElementById('btn-back').style.visibility=cur===0?'hidden':'visible';
+  document.getElementById('btn-next').textContent=cur===19?'結果を見る →':'次へ →';
+}
+
+function pick(i){
+  ans[cur]=i;
+  document.querySelectorAll('.opt').forEach((b,idx)=>{b.className='opt'+(idx===i?' selected':'');});
+  document.getElementById('btn-next').disabled=false;
+}
+function nextQ(){if(ans[cur]!==null){if(cur<19){cur++;renderQ();}else showResult();}}
+function prevQ(){if(cur>0){cur--;renderQ();}}
+
+function calcScores(){
+  const sc={};CATS.forEach(c=>sc[c]=0);
+  QUESTIONS.forEach((q,i)=>{if(ans[i]!==null)sc[q.cat]+=q.pts[ans[i]];});
+  return sc;
+}
+
+function showResult(){
+  show('step-result');
+  const sc=calcScores();
+  const total=Object.values(sc).reduce((a,b)=>a+b,0);
+  const company=document.getElementById('company-name').value||'診断対象';
+  const person=document.getElementById('person-name').value;
+  const date=new Date().toLocaleDateString('ja-JP');
+
+  document.getElementById('res-company').textContent=company+(person?`　${person}`:'');
+  document.getElementById('res-score').textContent=total;
+
+  let rank,rankClass;
+  if(total>=70){rank='S：業界トップ水準';rankClass='rank-S';}
+  else if(total>=56){rank='A：良好・一部改善余地あり';rankClass='rank-A';}
+  else if(total>=40){rank='B：課題あり・要改善';rankClass='rank-B';}
+  else if(total>=24){rank='C：多くの課題・早期対応推奨';rankClass='rank-C';}
+  else{rank='D：緊急改善が必要';rankClass='rank-D';}
+
+  const rankEl=document.getElementById('res-rank');
+  rankEl.textContent=rank;rankEl.className=`rank-pill ${rankClass}`;
+
+  const grid=document.getElementById('cat-grid');grid.innerHTML='';
+  CATS.forEach(c=>{
+    const s=sc[c],pct=Math.round((s/16)*100);
+    const d=document.createElement('div');d.className='cat-item';
+    d.innerHTML=`<div class="cat-item-name">${c}</div><div class="cat-item-score">${s}<span> / 16</span></div><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%"></div></div>`;
+    grid.appendChild(d);
+  });
+
+  const sorted=Object.entries(sc).sort((a,b)=>a[1]-b[1]);
+  const cmts=document.getElementById('comments');cmts.innerHTML='';
+  sorted.slice(0,3).forEach(([c])=>{
+    const d=document.createElement('div');d.className='comment-item';
+    d.innerHTML=`<div class="comment-dot"></div><div><strong>${c}</strong>：${ADVICE[c]}</div>`;
+    cmts.appendChild(d);
+  });
+
+  if(radarChart)radarChart.destroy();
+  radarChart=new Chart(document.getElementById('radar-chart'),{
+    type:'radar',
+    data:{labels:CATS,datasets:[{data:CATS.map(c=>sc[c]),backgroundColor:'rgba(31,78,121,0.15)',borderColor:'#1F4E79',borderWidth:2,pointBackgroundColor:'#1F4E79',pointRadius:4}]},
+    options:{
+      scales:{r:{min:0,max:16,ticks:{stepSize:4,display:false},grid:{color:'rgba(0,0,0,0.08)'},pointLabels:{color:'#6b7280',font:{size:11,family:"'Noto Sans JP',sans-serif"}},angleLines:{color:'rgba(0,0,0,0.08)'}}},
+      plugins:{legend:{display:false}},
+      animation:{duration:600,onComplete:()=>{
+        document.getElementById('p-radar-img').src=document.getElementById('radar-chart').toDataURL('image/png');
+      }}
+    }
+  });
+
+  // 印刷エリア構築
+  document.getElementById('p-date').textContent=date;
+  document.getElementById('p-company').textContent=company;
+  document.getElementById('p-person').textContent=(person?`担当者：${person}　`:``)+'診断日：'+date;
+  document.getElementById('p-score').textContent=total;
+  const pr=document.getElementById('p-rank');
+  pr.textContent=rank;pr.setAttribute('style',RANK_STYLES[rankClass]||'');
+
+  const pg=document.getElementById('p-cat-grid');pg.innerHTML='';
+  CATS.forEach(c=>{
+    const s=sc[c],pct=Math.round((s/16)*100);
+    const d=document.createElement('div');d.className='pci';
+    d.innerHTML=`<div class="pcn">${c}</div><div class="pcs">${s}<span> / 16</span></div><div class="pb"><div class="pbf" style="width:${pct}%"></div></div>`;
+    pg.appendChild(d);
+  });
+
+  const pc=document.getElementById('p-comments');pc.innerHTML='';
+  sorted.slice(0,3).forEach(([c])=>{
+    const d=document.createElement('div');d.className='pcmi';
+    d.innerHTML=`<div class="pdt"></div><div><strong>${c}</strong>：${ADVICE[c]}</div>`;
+    pc.appendChild(d);
+  });
+  document.getElementById('p-footer-date').textContent=date;
+}
+
+function printResult(){
+  setTimeout(()=>{
+    document.getElementById('p-radar-img').src=document.getElementById('radar-chart').toDataURL('image/png');
+    window.print();
+  },300);
+}
+
+function resetDiag(){
+  show('step-intro');
+  document.getElementById('company-name').value='';
+  document.getElementById('person-name').value='';
+}
+</script>
+</body>
+</html>
